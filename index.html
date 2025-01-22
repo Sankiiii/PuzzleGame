@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tech Puzzle Game</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+  <div class="header">
+    <h1>Tech Puzzle Challenge</h1>
+    <div class="stats">
+      <div class="stat-box">
+        <div>Time: <span id="timer">00:00</span></div>
+      </div>
+      <div class="stat-box">
+        <div>Moves: <span id="moves">0</span></div>
+      </div>
+      <div class="stat-box">
+        <div>Level: <span id="level-display">1</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="game-container" id="game-container"></div>
+
+  <div class="controls">
+    <select class="level-select" id="level-select">
+      <option value="computer">Computer</option>
+      <option value="keyboard">Keyboard</option>
+      <option value="mouse">Mouse</option>
+      <option value="pendrive">Pendrive</option>
+      <option value="cpu">CPU</option>
+      <option value="speaker">Speaker</option>
+    </select>
+    <button onclick="startGame()">New Game</button>
+    <button onclick="shufflePieces()">Shuffle</button>
+    <button onclick="showHint()">Hint</button>
+  </div>
+
+  <div class="victory-screen" id="victory-screen">
+    <div class="victory-content">
+      <div class="achievement-badge">🏆</div>
+      <h2>Puzzle Master! 🎉</h2>
+      <div class="preview-image" id="completed-preview"></div>
+      <div class="completion-message" id="completion-message"></div>
+      <p>Time: <span id="final-time">00:00</span></p>
+      <p>Moves: <span id="final-moves">0</span></p>
+      <button onclick="startGame()">Next Puzzle</button>
+    </div>
+  </div>
+
+  <script>
+let moves = 0;
+let timer = 0;
+let timerInterval;
+let selectedPiece = null;
+let offset = { x: 0, y: 0 };
+let pieces = [];
+let currentLevel = 'computer';
+
+// SVG-based images for puzzles
+const computerSVG = `
+  <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+    <rect x="100" y="100" width="400" height="300" fill="#333" />
+    <rect x="120" y="120" width="360" height="240" fill="#4CAF50" />
+    <rect x="50" y="400" width="500" height="20" fill="#555" />
+    <rect x="250" y="420" width="100" height="80" fill="#777" />
+  </svg>
+`;
+
+const keyboardSVG = `
+  <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+    <rect x="50" y="200" width="500" height="200" rx="10" fill="#333" />
+    ${Array.from({length: 30}, (_, i) => {
+      const row = Math.floor(i / 10);
+      const col = i % 10;
+      return `<rect x="${70 + col * 48}" y="${220 + row * 48}" width="40" height="40" rx="5" fill="#666" />`;
+    }).join('')}
+  </svg>
+`;
+
+const mouseSVG = `
+<svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer shape -->
+  <path d="M300,100 Q350,100 375,150 Q400,200 400,300 Q400,400 375,450 Q350,500 300,500 Q250,500 225,450 Q200,400 200,300 Q200,200 225,150 Q250,100 300,100 Z" fill="#888" />
+
+  <!-- Scroll wheel -->
+  <rect x="285" y="250" width="30" height="50" rx="15" fill="#444" />
+
+  <!-- Left button -->
+  <path d="M300,110 Q340,110 360,150 Q380,190 380,280 Q380,300 360,320 L300,320 Z" fill="#bbb" />
+
+  <!-- Right button -->
+  <path d="M300,110 Q260,110 240,150 Q220,190 220,280 Q220,300 240,320 L300,320 Z" fill="#ccc" />
+
+  <!-- Wire -->
+  <path d="M300,80 C300,50 280,30 250,30 C220,30 200,50 200,80 
+           C200,110 220,130 250,130 
+           C280,130 300,110 300,80 
+           M250,30 Q240,15 220,5 Q200,-5 180,-15 Q160,-25 140,-20" 
+        fill="none" stroke="#444" stroke-width="5" />
+</svg>
+
+
+
+
+`;
+
+const cpuSVG = `
+<svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+    <rect x="150" y="150" width="300" height="400" rx="10" fill="#444" />
+    <rect x="170" y="170" width="260" height="360" fill="#555" />
+    <rect x="200" y="200" width="200" height="50" rx="5" fill="#4CAF50" />
+    ${Array.from({length: 6}, (_, i) => {
+      return `<rect x="${170}" y="${300 + i * 30}" width="30" height="20" fill="#666" />`;
+    }).join('')}
+    ${Array.from({length: 6}, (_, i) => {
+      return `<rect x="${400}" y="${300 + i * 30}" width="30" height="20" fill="#666" />`;
+    }).join('')}
+  </svg>
+  
+`;
+
+const pendriveSVG = `
+  <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+    <path d="M200,100 L400,100 Q420,100 420,120 L420,450 Q420,470 400,470 
+             L200,470 Q180,470 180,450 L180,120 Q180,100 200,100" 
+          fill="#333" />
+    <rect x="250" y="50" width="100" height="50" rx="10" fill="#222" />
+    <circle cx="300" cy="200" r="15" fill="#888" />
+    <rect x="230" y="300" width="140" height="100" fill="#444" />
+  </svg>
+`;
+
+
+
+const speakerSVG = `
+  <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+    <rect x="150" y="100" width="300" height="400" rx="20" fill="#333" />
+    <circle cx="300" cy="250" r="80" fill="#555" />
+    <circle cx="300" cy="250" r="60" fill="#666" />
+    <circle cx="300" cy="250" r="40" fill="#777" />
+    <circle cx="300" cy="250" r="20" fill="#888" />
+    <rect x="250" y="420" width="100" height="50" rx="10" fill="#666" />
+    <circle cx="300" cy="445" r="15" fill="#888" />
+  </svg>
+`;
+
+const images = {
+  computer: `data:image/svg+xml,${encodeURIComponent(computerSVG)}`,
+  keyboard: `data:image/svg+xml,${encodeURIComponent(keyboardSVG)}`,
+  mouse: `data:image/svg+xml,${encodeURIComponent(mouseSVG)}`,
+  pendrive: `data:image/svg+xml,${encodeURIComponent(pendriveSVG)}`,
+  cpu: `data:image/svg+xml,${encodeURIComponent(cpuSVG)}`,
+  speaker: `data:image/svg+xml,${encodeURIComponent(speakerSVG)}`
+};
+
+const completionMessages = {
+  computer: [
+    "You've mastered the digital realm! 🖥️",
+    "Your computer expertise is showing! 💻",
+    "Tech wizardry at its finest! ⚡"
+  ],
+  keyboard: [
+    "Key perfect! Your typing skills must be amazing! ⌨️",
+    "You've unlocked the power of the keyboard! 🎹",
+    "QWERTY mastery achieved! 🎯"
+  ],
+  mouse: [
+    "Click perfect! You've mastered the mouse! 🖱️",
+    "Smooth movements, perfect precision! 🎯",
+    "You're a mouse master now! 🏆"
+  ],
+  pendrive: [
+    "Storage virtuoso! 💾",
+    "Data master achieved! 📂",
+    "Perfect portable prowess! 🚀"
+  ],
+  cpu: [
+    "Processing power perfected! 🔲",
+    "CPU mastery complete! 💫",
+    "Core competency achieved! 🎮"
+  ],
+  speaker: [
+    "Sound success! 🔊",
+    "Audio assembly mastered! 🎵",
+    "Speaker setup supreme! 🎶"
+  ]
+};
+
+function getRandomMessage(level, moves, time) {
+  const messages = completionMessages[level];
+  const baseMessage = messages[Math.floor(Math.random() * messages.length)];
+
+  let performanceMessage = '';
+  if (moves <= 20 && time <= 300) {
+    performanceMessage = "Incredible! You solved it in no time with so few moves! 🎯";
+  } else if (moves <= 30 && time <= 600) {
+    performanceMessage = "Great job! You've cracked it with good speed! ⏱️";
+  } else if (moves > 30) {
+    performanceMessage = "Nice effort! Keep practicing for an even faster solve! ⚡";
+  } else {
+    performanceMessage = "Well done! You've completed the challenge! 🎉";
+  }
+
+  return `${baseMessage} ${performanceMessage}`;
+}
+
+
+function updateStats() {
+  document.getElementById('moves').textContent = moves;
+  document.getElementById('level-display').textContent = currentLevel;
+}
+
+function updateTimer() {
+  const minutes = Math.floor(timer / 60).toString().padStart(2, '0');
+  const seconds = (timer % 60).toString().padStart(2, '0');
+  document.getElementById('timer').textContent = `${minutes}:${seconds}`;
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timer = 0;
+  updateTimer();
+  timerInterval = setInterval(() => {
+    timer++;
+    updateTimer();
+  }, 1000);
+}
+
+function createPieces() {
+  const container = document.getElementById('game-container');
+  container.innerHTML = '';
+  pieces = [];
+
+  for (let i = 0; i < 16; i++) {
+    const piece = document.createElement('div');
+    const row = Math.floor(i / 4);
+    const col = i % 4;
+
+    piece.className = 'puzzle-piece';
+    piece.style.backgroundImage = `url(${images[currentLevel]})`;
+    piece.style.backgroundPosition = `-${col * 150}px -${row * 150}px`;
+
+    const correctPos = {
+      x: col * 150,
+      y: row * 150
+    };
+
+    pieces.push({
+      element: piece,
+      correctPos,
+      currentPos: { ...correctPos }
+    });
+
+    piece.style.left = `${correctPos.x}px`;
+    piece.style.top = `${correctPos.y}px`;
+
+    piece.addEventListener('mousedown', startDragging);
+    container.appendChild(piece);
+  }
+}
+
+function startDragging(e) {
+  selectedPiece = e.target;
+  const rect = selectedPiece.getBoundingClientRect();
+  offset.x = e.clientX - rect.left;
+  offset.y = e.clientY - rect.top;
+
+  selectedPiece.style.zIndex = '1000';
+  document.addEventListener('mousemove', dragPiece);
+  document.addEventListener('mouseup', stopDragging);
+}
+
+function dragPiece(e) {
+  if (!selectedPiece) return;
+  const container = document.getElementById('game-container').getBoundingClientRect();
+  
+  let newX = e.clientX - offset.x - container.left;
+  let newY = e.clientY - offset.y - container.top;
+  
+  // Boundary constraints
+  newX = Math.max(0, Math.min(newX, container.width - 150));
+  newY = Math.max(0, Math.min(newY, container.height - 150));
+  
+  selectedPiece.style.left = `${newX}px`;
+  selectedPiece.style.top = `${newY}px`;
+}
+
+function stopDragging() {
+  if (!selectedPiece) return;
+  
+  document.removeEventListener('mousemove', dragPiece);
+  document.removeEventListener('mouseup', stopDragging);
+
+  const col = Math.round(parseInt(selectedPiece.style.left) / 150);
+  const row = Math.round(parseInt(selectedPiece.style.top) / 150);
+
+  const snappedX = col * 150;
+  const snappedY = row * 150;
+
+  selectedPiece.style.left = `${snappedX}px`;
+  selectedPiece.style.top = `${snappedY}px`;
+  selectedPiece.style.zIndex = '1';
+
+  const pieceData = pieces.find(piece => piece.element === selectedPiece);
+  pieceData.currentPos = { x: snappedX, y: snappedY };
+
+  moves++;
+  updateStats();
+  checkVictory();
+  
+  selectedPiece = null;
+}
+
+function checkVictory() {
+  if (pieces.every(piece => 
+    piece.currentPos.x === piece.correctPos.x && 
+    piece.currentPos.y === piece.correctPos.y
+  )) {
+    clearInterval(timerInterval);
+    document.getElementById('victory-screen').style.display = 'flex';
+    document.getElementById('final-time').textContent = document.getElementById('timer').textContent;
+    document.getElementById('final-moves').textContent = moves;
+
+    const victoryMessage = getRandomMessage(currentLevel, moves, timer);
+    document.getElementById('completion-message').textContent = victoryMessage;
+
+    document.getElementById('completed-preview').style.backgroundImage = `url(${images[currentLevel]})`;
+  }
+}
+
+
+function startGame() {
+  moves = 0;
+  updateStats();
+  startTimer();
+  createPieces();
+  // shufflePieces();
+  document.getElementById('victory-screen').style.display = 'none';
+}
+
+function shufflePieces() {
+  const positions = [];
+  for (let i = 0; i < 16; i++) {
+    positions.push({
+      x: (i % 4) * 150,
+      y: Math.floor(i / 4) * 150
+    });
+  }
+
+  // Fisher-Yates shuffle
+  for (let i = positions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [positions[i], positions[j]] = [positions[j], positions[i]];
+  }
+
+  pieces.forEach((piece, index) => {
+    piece.element.style.left = `${positions[index].x}px`;
+    piece.element.style.top = `${positions[index].y}px`;
+    piece.currentPos = { ...positions[index] };
+  });
+}
+
+function showHint() {
+  document.getElementById('completed-preview').style.backgroundImage = `url(${images[currentLevel]})`;
+  document.getElementById('hint-screen').style.display = 'flex';
+  setTimeout(() => {
+    document.getElementById('hint-screen').style.display = 'none';
+  }, 2000);
+}
+
+document.getElementById('level-select').addEventListener('change', (e) => {
+  currentLevel = e.target.value;
+  startGame();
+});
+
+// Initialize game when the page loads
+window.addEventListener('load', startGame);
+  </script>
+</body>
+</html>

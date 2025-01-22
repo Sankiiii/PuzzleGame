@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sliding Puzzle Game</title>
+  <style>
+    .puzzle-container {
+      width: 300px;
+      height: 300px;
+      position: relative;
+      margin: 20px auto;
+      border: 2px solid #333;
+      background: #f0f0f0;
+    }
+    
+    .puzzle-piece {
+      width: 98px;
+      height: 98px;
+      position: absolute;
+      border: 1px solid #fff;
+      cursor: pointer;
+      transition: all 0.2s;
+      background-size: 300px 300px;
+      box-shadow: inset 0 0 2px rgba(0,0,0,0.5);
+    }
+    
+    .controls {
+      text-align: center;
+      margin: 20px;
+    }
+    
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 0 10px;
+      cursor: pointer;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    
+    button:hover {
+      background: #45a049;
+    }
+    
+    .moves {
+      font-size: 18px;
+      margin: 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <button onclick="shufflePuzzle()">Shuffle</button>
+    <button onclick="checkWin()">Check Solution</button>
+  </div>
+  <div class="moves">Moves: <span id="moveCount">0</span></div>
+  <div class="puzzle-container" id="puzzleContainer"></div>
+
+  <script>
+    const size = 3;
+    let moves = 0;
+    let pieces = [];
+    let emptyPos = { x: size - 1, y: size - 1 };
+    
+    // Using a placeholder image
+    const imageUrl = './laptop.jpg';
+    
+    function createPuzzle() {
+      const container = document.getElementById('puzzleContainer');
+      pieces = [];
+      
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          if (y === size - 1 && x === size - 1) continue;
+          
+          const piece = document.createElement('div');
+          piece.className = 'puzzle-piece';
+          piece.style.backgroundImage = `url(${imageUrl})`;
+          piece.style.backgroundPosition = `-${x * 100}px -${y * 100}px`;
+          
+          pieces.push({
+            element: piece,
+            currentX: x,
+            currentY: y,
+            correctX: x,
+            correctY: y
+          });
+          
+          piece.addEventListener('click', () => movePiece(x, y));
+          updatePiecePosition(pieces[pieces.length - 1]);
+          container.appendChild(piece);
+        }
+      }
+    }
+    
+    function updatePiecePosition(piece) {
+      piece.element.style.left = `${piece.currentX * 100}px`;
+      piece.element.style.top = `${piece.currentY * 100}px`;
+    }
+    
+    function movePiece(x, y) {
+      if (isAdjacent(x, y, emptyPos.x, emptyPos.y)) {
+        const piece = pieces.find(p => p.currentX === x && p.currentY === y);
+        
+        // Swap positions
+        piece.currentX = emptyPos.x;
+        piece.currentY = emptyPos.y;
+        emptyPos = { x, y };
+        
+        updatePiecePosition(piece);
+        moves++;
+        document.getElementById('moveCount').textContent = moves;
+      }
+    }
+    
+    function isAdjacent(x1, y1, x2, y2) {
+      return (Math.abs(x1 - x2) === 1 && y1 === y2) || 
+             (Math.abs(y1 - y2) === 1 && x1 === x2);
+    }
+    
+    function shufflePuzzle() {
+      // Perform random valid moves
+      for (let i = 0; i < 200; i++) {
+        const validMoves = [];
+        
+        // Check all adjacent positions
+        for (let dx = -1; dx <= 1; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            if (Math.abs(dx) + Math.abs(dy) === 1) {
+              const newX = emptyPos.x + dx;
+              const newY = emptyPos.y + dy;
+              
+              if (newX >= 0 && newX < size && newY >= 0 && newY < size) {
+                validMoves.push({ x: newX, y: newY });
+              }
+            }
+          }
+        }
+        
+        // Make random valid move
+        const move = validMoves[Math.floor(Math.random() * validMoves.length)];
+        movePiece(move.x, move.y);
+      }
+      
+      moves = 0;
+      document.getElementById('moveCount').textContent = moves;
+    }
+    
+    function checkWin() {
+      const won = pieces.every(piece => 
+        piece.currentX === piece.correctX && 
+        piece.currentY === piece.correctY
+      );
+      
+      alert(won ? 'Congratulations! You solved the puzzle!' : 'Keep trying!');
+    }
+    
+    // Initialize the puzzle
+    createPuzzle();
+  </script>
+</body>
+</html>

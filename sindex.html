@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Tech Puzzle Game</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+  <header class="header">
+    <h1>Tech Puzzle Challenge</h1>
+    <div class="stats">
+      <div class="stat-box">
+        <div>Time: <span id="timer">00:00</span></div>
+      </div>
+      <div class="stat-box">
+        <div>Moves: <span id="moves">0</span></div>
+      </div>
+      <div class="stat-box">
+        <div>Level: <span id="level-display">1</span></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="game-container" id="game-container"></div>
+
+  <div class="controls">
+    <select class="level-select" id="level-select">
+      <option value="computer">Computer</option>
+      <option value="keyboard">Keyboard</option>
+      <option value="mouse">Mouse</option>
+      <option value="cpu">CPU</option>
+      <option value="pendrive">Pendrive</option>
+      <option value="speaker">Speaker</option>
+    </select>
+    <button onclick="startGame()">New Game</button>
+    <button onclick="shufflePieces()">Shuffle</button>
+    <button onclick="showHint()">Hint</button>
+  </div>
+
+  <div class="victory-screen" id="victory-screen">
+    <div class="victory-content">
+      <div class="achievement-badge">🏆</div>
+      <h2>Puzzle Master! 🎉</h2>
+      <div class="preview-image" id="completed-preview"></div>
+      <div class="completion-message" id="completion-message"></div>
+      <p>Time: <span id="final-time">00:00</span></p>
+      <p>Moves: <span id="final-moves">0</span></p>
+      <button onclick="startGame()">Next Puzzle</button>
+    </div>
+  </div>
+
+  <script src="sscript.js"></script>
+</body>
+</html>
