@@ -195,11 +195,11 @@ function getRandomMessage(level, moves, time) {
   const baseMessage = messages[Math.floor(Math.random() * messages.length)];
 
   let performanceMessage = '';
-  if (moves <= 20 && time <= 300) {
+  if ( time <= 300) {
     performanceMessage = "Incredible! You solved it in no time with so few moves! 🎯";
-  } else if (moves <= 30 && time <= 600) {
+  } else if (time <= 600) {
     performanceMessage = "Great job! You've cracked it with good speed! ⏱️";
-  } else if (moves > 30) {
+  } else if (time > 900) {
     performanceMessage = "Nice effort! Keep practicing for an even faster solve! ⚡";
   } else {
     performanceMessage = "Well done! You've completed the challenge! 🎉";
