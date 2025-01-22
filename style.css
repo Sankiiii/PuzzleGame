@@ -50,6 +50,7 @@ body::before {
   text-align: center;
   padding: 30px;
   width: 100%;
+  max-height: 150px;
   max-width: 800px;
   background: var(--glass-bg);
   backdrop-filter: blur(10px);
@@ -80,6 +81,12 @@ body::before {
   100% { transform: translate(-30%, -30%) rotate(360deg); }
 }
 
+.title {
+  margin-top: -20px; /* Moves the <h1> tag 20px upwards */
+  text-align: center; /* Optional: Center aligns the text */
+  font-size: 2.5rem; /* Adjust font size if needed */
+}
+
 .header h1 {
   font-size: 3em;
   margin-bottom: 20px;
@@ -99,12 +106,12 @@ body::before {
   flex-wrap: wrap;
   width: 100%;
   max-width: 600px;
-  margin: 15px auto;
+  margin: 5px auto;
 }
 
 .stat-box {
   background: var(--glass-bg);
-  padding: 20px 35px;
+  padding: 10px 20px;
   border-radius: 20px;
   text-align: center;
   flex: 1;
@@ -117,6 +124,7 @@ body::before {
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;
   overflow: hidden;
+  margin-top: -10px;
 }
 
 .stat-box::before {
@@ -360,6 +368,24 @@ button:active {
   position: relative;
   z-index: 1;
 }
+
+.hint-overlay {
+  position: absolute;
+  border: 3px dashed #ff5733; /* Highlight color */
+  pointer-events: none; /* Avoid interfering with clicks */
+  z-index: 999;
+  animation: hintPulse 0.5s infinite alternate;
+}
+
+@keyframes hintPulse {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.5;
+  }
+}
+
 
 @keyframes victoryBounce {
   0%, 100% {

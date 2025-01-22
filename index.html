@@ -9,7 +9,7 @@
 </head>
 <body>
   <div class="header">
-    <h1>Tech Puzzle Challenge</h1>
+    <h1 class="title">Tech Puzzle Challenge</h1>
     <div class="stats">
       <div class="stat-box">
         <div>Time: <span id="timer">00:00</span></div>
@@ -365,12 +365,38 @@ function shufflePieces() {
 }
 
 function showHint() {
-  document.getElementById('completed-preview').style.backgroundImage = `url(${images[currentLevel]})`;
-  document.getElementById('hint-screen').style.display = 'flex';
+  // Find all misplaced pieces
+  const misplacedPieces = pieces.filter(piece => 
+    piece.currentPos.x !== piece.correctPos.x || piece.currentPos.y !== piece.correctPos.y
+  );
+
+  // If all pieces are in their correct positions, show a message
+  if (misplacedPieces.length === 0) {
+    alert("All pieces are already in their correct positions!");
+    return;
+  }
+
+  // Randomly select one misplaced piece
+  const randomIndex = Math.floor(Math.random() * misplacedPieces.length);
+  const pieceToHint = misplacedPieces[randomIndex];
+
+  // Highlight the correct position of the selected piece
+  const hintOverlay = document.createElement('div');
+  hintOverlay.className = 'hint-overlay';
+  hintOverlay.style.left = `${pieceToHint.correctPos.x}px`;
+  hintOverlay.style.top = `${pieceToHint.correctPos.y}px`;
+  hintOverlay.style.width = '150px';
+  hintOverlay.style.height = '150px';
+
+  const container = document.getElementById('game-container');
+  container.appendChild(hintOverlay);
+
+  // Remove the highlight after 3 seconds
   setTimeout(() => {
-    document.getElementById('hint-screen').style.display = 'none';
-  }, 2000);
+    container.removeChild(hintOverlay);
+  }, 3000);
 }
+
 
 document.getElementById('level-select').addEventListener('change', (e) => {
   currentLevel = e.target.value;
