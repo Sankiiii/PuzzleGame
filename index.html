@@ -28,19 +28,21 @@
   <div class="controls">
     <select class="level-select" id="level-select">
       <option value="computer">Computer</option>
-      <option value="keyboard">Keyboard</option>
-      <option value="mouse">Mouse</option>
+      <option value="keyboard">Computer & Keyboard</option>
       <option value="pendrive">Pendrive</option>
       <option value="cpu">CPU</option>
       <option value="speaker">Speaker</option>
+      <option value="mouse">Mouse</option>
     </select>
     <button onclick="startGame()">New Game</button>
     <button onclick="shufflePieces()">Shuffle</button>
-    <button onclick="showHint()">Hint</button>
   </div>
 
   <div class="victory-screen" id="victory-screen">
     <div class="victory-content">
+      <!-- Close Button -->
+      <button class="close-btn" onclick="closeVictoryScreen()">✖</button>
+  
       <div class="achievement-badge">🏆</div>
       <h2>Puzzle Master! 🎉</h2>
       <div class="preview-image" id="completed-preview"></div>
@@ -50,6 +52,7 @@
       <button onclick="startGame()">Next Puzzle</button>
     </div>
   </div>
+  
 
   <script>
 let moves = 0;
@@ -58,7 +61,12 @@ let timerInterval;
 let selectedPiece = null;
 let offset = { x: 0, y: 0 };
 let pieces = [];
-let currentLevel = 'computer';
+let currentLevel = 'Computer';
+
+function closeVictoryScreen() {
+  document.getElementById('victory-screen').style.display = 'none';
+}
+
 
 // SVG-based images for puzzles
 const computerSVG = `
@@ -71,63 +79,129 @@ const computerSVG = `
 `;
 
 const keyboardSVG = `
-  <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
-    <rect x="50" y="200" width="500" height="200" rx="10" fill="#333" />
-    ${Array.from({length: 30}, (_, i) => {
-      const row = Math.floor(i / 10);
-      const col = i % 10;
-      return `<rect x="${70 + col * 48}" y="${220 + row * 48}" width="40" height="40" rx="5" fill="#666" />`;
-    }).join('')}
-  </svg>
+  <svg viewBox="0 0 600 800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Computer -->
+  <rect x="75" y="100" width="440" height="300" fill="#333" />
+  <rect x="120" y="110" width="360" height="270" fill="#4CAF50" />
+  <rect x="50" y="480" width="500" height="20" fill="#555" />
+  <rect x="250" y="400" width="100" height="80" fill="#777" />
+
+  <!-- Keyboard -->
+  <rect x="50" y="520" width="500" height="200" rx="10" fill="#333" />
+  ${Array.from({ length: 30 }, (_, i) => {
+    const rows = 3; // Number of rows
+    const cols = 10; // Number of keys per row
+    const padding = 10; // Space between keys
+    const keyWidth = (500 - (cols + 1) * padding) / cols; // Calculate key width
+    const keyHeight = (200 - (rows + 1) * padding) / rows; // Calculate key height
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    const x = 50 + padding + col * (keyWidth + padding);
+    const y = 520 + padding + row * (keyHeight + padding);
+    return `<rect x="${x}" y="${y}" width="${keyWidth}" height="${keyHeight}" rx="5" fill="#666" />`;
+  }).join('')}
+</svg>
+
 `;
 
 const mouseSVG = `
-<svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
   <!-- Outer shape -->
-  <path d="M300,100 Q350,100 375,150 Q400,200 400,300 Q400,400 375,450 Q350,500 300,500 Q250,500 225,450 Q200,400 200,300 Q200,200 225,150 Q250,100 300,100 Z" fill="#888" />
+  <path d="M200,50 Q250,50 275,100 Q300,150 300,250 Q300,350 275,375 Q250,400 200,400 Q150,400 125,375 Q100,350 100,250 Q100,150 125,100 Q150,50 200,50 Z" fill="#888" />
 
   <!-- Scroll wheel -->
-  <rect x="285" y="250" width="30" height="50" rx="15" fill="#444" />
+  <rect x="185" y="180" width="30" height="60" rx="15" fill="#444" />
 
   <!-- Left button -->
-  <path d="M300,110 Q340,110 360,150 Q380,190 380,280 Q380,300 360,320 L300,320 Z" fill="#bbb" />
+  <path d="M200,60 Q240,60 260,100 Q280,140 280,240 Q280,260 260,280 L200,280 Z" fill="#bbb" />
 
   <!-- Right button -->
-  <path d="M300,110 Q260,110 240,150 Q220,190 220,280 Q220,300 240,320 L300,320 Z" fill="#ccc" />
+  <path d="M200,60 Q160,60 140,100 Q120,140 120,240 Q120,260 140,280 L200,280 Z" fill="#ccc" />
 
   <!-- Wire -->
-  <path d="M300,80 C300,50 280,30 250,30 C220,30 200,50 200,80 
-           C200,110 220,130 250,130 
-           C280,130 300,110 300,80 
-           M250,30 Q240,15 220,5 Q200,-5 180,-15 Q160,-25 140,-20" 
+  <path d="M200,30 C200,10 180,-10 160,-10 C140,-10 120,10 120,30 
+           C120,50 140,70 160,70 
+           C180,70 200,50 200,30 
+           M160,-10 Q150,-20 130,-25 Q110,-30 90,-35 Q70,-40 50,-30" 
         fill="none" stroke="#444" stroke-width="5" />
 </svg>
+
 `;
 
 const cpuSVG = `
-<svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
-    <rect x="150" y="150" width="300" height="400" rx="10" fill="#444" />
-    <rect x="170" y="170" width="260" height="360" fill="#555" />
-    <rect x="200" y="200" width="200" height="50" rx="5" fill="#4CAF50" />
-    ${Array.from({length: 6}, (_, i) => {
-      return `<rect x="${170}" y="${300 + i * 30}" width="30" height="20" fill="#666" />`;
-    }).join('')}
-    ${Array.from({length: 6}, (_, i) => {
-      return `<rect x="${400}" y="${300 + i * 30}" width="30" height="20" fill="#666" />`;
-    }).join('')}
-  </svg>
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer body of the CPU -->
+  <rect x="50" y="20" width="300" height="360" rx="15" fill="#444" stroke="#333" stroke-width="3" />
+
+  <!-- Inner body of the CPU -->
+  <rect x="70" y="40" width="260" height="320" fill="#555" />
+
+  <!-- Power Button -->
+  <circle cx="100" cy="80" r="15" fill="#4CAF50" stroke="#333" stroke-width="2" />
+  <circle cx="100" cy="80" r="8" fill="#333" />
+
+  <!-- USB Ports -->
+  <rect x="80" y="120" width="40" height="10" rx="2" fill="#666" />
+  <rect x="80" y="140" width="40" height="10" rx="2" fill="#666" />
+
+  <!-- Horizontal Vents -->
+  ${Array.from({ length: 8 }, (_, i) => {
+    return `<rect x="150" y="${70 + i * 15}" width="200" height="5" rx="2" fill="#333" />`;
+  }).join('')}
+
+  <!-- Left-side ports -->
+  ${Array.from({ length: 4 }, (_, i) => {
+    return `<rect x="70" y="${200 + i * 30}" width="30" height="20" rx="3" fill="#777" />`;
+  }).join('')}
+
+  <!-- Right-side ports -->
+  ${Array.from({ length: 4 }, (_, i) => {
+    return `<rect x="300" y="${200 + i * 30}" width="30" height="20" rx="3" fill="#777" />`;
+  }).join('')}
+
+  <!-- Indicator Light -->
+  <circle cx="200" cy="360" r="10" fill="#FF5722" stroke="#333" stroke-width="2" />
+
+  <!-- Text branding -->
+  <text x="140" y="300" font-family="Arial, sans-serif" font-size="12" fill="#888">Dell CPU</text>
+</svg>
+
+
+
+
+
   
 `;
 
 const pendriveSVG = `
-  <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
-    <path d="M200,100 L400,100 Q420,100 420,120 L420,450 Q420,470 400,470 
-             L200,470 Q180,470 180,450 L180,120 Q180,100 200,100" 
-          fill="#333" />
-    <rect x="250" y="50" width="100" height="50" rx="10" fill="#222" />
-    <circle cx="300" cy="200" r="15" fill="#888" />
-    <rect x="230" y="300" width="140" height="100" fill="#444" />
-  </svg>
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pendrive Body -->
+  <rect x="50" y="100" width="300" height="220" rx="20" fill="#333" stroke="#222" stroke-width="4" />
+
+  <!-- Body Highlight -->
+  <rect x="70" y="110" width="260" height="200" rx="15" fill="#444" />
+
+  <!-- USB Connector Base -->
+  <rect x="150" y="40" width="100" height="60" rx="10" fill="#666" />
+  
+  <!-- USB Metal Connector -->
+  <rect x="170" y="10" width="60" height="30" fill="#777" stroke="#555" stroke-width="2" />
+  <rect x="175" y="15" width="15" height="20" fill="#aaa" />
+  <rect x="210" y="15" width="15" height="20" fill="#aaa" />
+
+  <!-- Decorative Lines -->
+  <line x1="75" y1="130" x2="325" y2="130" stroke="#555" stroke-width="2" />
+  <line x1="75" y1="270" x2="325" y2="270" stroke="#555" stroke-width="2" />
+
+  <!-- Indicator Light -->
+  <circle cx="200" cy="320" r="10" fill="#4CAF50" stroke="#333" stroke-width="2" />
+
+  <!-- Text for Realism -->
+  <text x="160" y="230" font-family="Arial, sans-serif" font-size="20" fill="#888">PENDRIVE</text>
+</svg>
+
+
+
 `;
 
 
@@ -161,7 +235,7 @@ const completionMessages = {
   ],
   keyboard: [
     "Key perfect! Your typing skills must be amazing! ⌨️",
-    "You've unlocked the power of the keyboard! 🎹",
+    "You've unlocked the power of the Computer & keyboard! 🎹",
     "QWERTY mastery achieved! 🎯"
   ],
   mouse: [
@@ -191,11 +265,11 @@ function getRandomMessage(level, moves, time) {
   const baseMessage = messages[Math.floor(Math.random() * messages.length)];
 
   let performanceMessage = '';
-  if ( time <= 300) {
+  if (moves <= 20 && time <= 300) {
     performanceMessage = "Incredible! You solved it in no time with so few moves! 🎯";
-  } else if (time <= 600) {
+  } else if (moves <= 30 && time <= 600) {
     performanceMessage = "Great job! You've cracked it with good speed! ⏱️";
-  } else if (time > 900) {
+  } else if (moves > 30) {
     performanceMessage = "Nice effort! Keep practicing for an even faster solve! ⚡";
   } else {
     performanceMessage = "Well done! You've completed the challenge! 🎉";
